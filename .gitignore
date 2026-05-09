@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+data/raw/*
+data/processed/*
+data/tableau_exports/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/tableau_exports/.gitkeep
+*.duckdb
+*.duckdb.wal
