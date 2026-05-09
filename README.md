@@ -14,20 +14,41 @@ Retail product teams need to understand where customers drop out of the shopping
 
 The project uses synthetic data first so the full journey can be designed around realistic business questions without privacy issues, missing instrumentation, or Kaggle-specific schema constraints. The generator creates 90 days of grocery/e-commerce sessions, events, orders, product data, and experiment assignments for 50,000 users.
 
-## Architecture
+## High-Level Architecture
 
-```text
-Raw Synthetic Data
-↓
-Bronze Layer: Raw tables
-↓
-Silver Layer: Cleaned and validated tables
-↓
-Gold Layer: KPI, funnel, experiment, and segment marts
-↓
-Streamlit Dashboard + AI Insight Assistant
-↓
-Tableau-ready CSV Exports
+```mermaid
+flowchart LR
+    subgraph sources["Sources"]
+        synthetic["Synthetic E-commerce Data<br/>Users, sessions, events, orders, products"]
+        docs["Business Knowledge Base<br/>Glossary, experimentation playbook,<br/>stakeholder guide, retail context"]
+    end
+
+    subgraph pipeline["Product Analytics Pipeline"]
+        bronze["Bronze Layer<br/>Raw CSV ingestion into DuckDB<br/><br/>Tables:<br/>raw_users, raw_sessions,<br/>raw_events, raw_orders,<br/>raw_products, raw_experiment_assignments"]
+        silver["Silver Layer<br/>Cleaned and validated analytical entities<br/><br/>Transformations:<br/>type casting, deduplication,<br/>standardised categories, trusted keys"]
+        gold["Gold Layer<br/>Business-ready analytical marts<br/><br/>Tables:<br/>gold_daily_kpis,<br/>gold_funnel_metrics,<br/>gold_experiment_results,<br/>gold_segment_performance,<br/>gold_product_performance"]
+    end
+
+    subgraph intelligence["AI Insight Layer"]
+        rag["RAG Context Retrieval<br/>Markdown business docs"]
+        agents["Multi-Agent Workflow<br/>Data Quality, Experiment Analyst,<br/>Insight, Recommendation,<br/>Validation, Report"]
+        llm["OpenAI insight generation<br/>Claude validation<br/>Rule-based fallback"]
+    end
+
+    subgraph consume["Consume"]
+        streamlit["Streamlit Dashboard<br/>Executive, Funnel, Experiment,<br/>Segment, AI Assistant"]
+        tableau["Tableau-ready CSV Exports<br/>Gold-layer extracts"]
+        decisions["Product Decisions<br/>Checkout optimisation,<br/>segment prioritisation,<br/>stakeholder reporting"]
+    end
+
+    synthetic --> bronze --> silver --> gold
+    docs --> rag --> agents
+    gold --> agents
+    agents --> llm --> streamlit
+    gold --> streamlit
+    gold --> tableau
+    streamlit --> decisions
+    tableau --> decisions
 ```
 
 DuckDB is used as a local SQL OLAP warehouse at `data/processed/ecommerce_analytics.duckdb`. Python orchestrates the pipeline, while SQL performs the main Bronze, Silver, and Gold transformations.
@@ -47,6 +68,18 @@ Gold creates marts for daily KPIs, funnel metrics, experiment results, segment p
 3. Experimentation: control vs variant conversion, uplift, p-value, confidence interval, revenue impact, and interpretation.
 4. Segment Analysis: conversion by device, region, customer type, loyalty, and channel, with mobile checkout insight.
 5. AI Insight Assistant: asks business questions and returns insight, evidence, recommendation, confidence, and validation notes.
+
+The experiment is intentionally designed to show realistic product analytics nuance: the variant improves checkout conversion overall, but performance varies by segment. For example, some filtered segments may show weaker or non-significant uplift, which prevents over-generalising the global result.
+
+## Dashboard Preview
+
+![Executive Overview](docs/assets/ExecutiveOverview.png)
+
+![Funnel Analysis](docs/assets/FunnelAnalysis.png)
+
+![Experimentation](docs/assets/Experimentation.png)
+
+![AI Insight Assistant](docs/assets/AI_InsightAssistant.png)
 
 ## AI Agent Workflow
 
@@ -115,6 +148,8 @@ Then add `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` to `.env`.
 - AI insight generation with validation
 - RAG over business documentation
 
-## Role Mapping
+## Professional Relevance
 
-For Senior Digital Analyst and Product Analyst roles, this project demonstrates the ability to define product metrics, build trustworthy datasets, interpret experiments, identify commercial opportunities, communicate clearly with stakeholders, and responsibly use AI to accelerate insight generation without replacing metric governance.
+This project demonstrates the core work expected in senior digital analytics and product analytics roles: defining reliable product metrics, modelling behavioural data, diagnosing funnel performance, interpreting experimentation results, quantifying commercial impact, and communicating recommendations clearly to product and commercial stakeholders.
+
+It also shows how AI can support analytics workflows responsibly: calculations are handled by SQL and Python, while LLMs are limited to explanation, summarisation, recommendation framing, and validation against measured evidence.

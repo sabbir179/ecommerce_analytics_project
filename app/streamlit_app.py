@@ -70,6 +70,16 @@ st.markdown(
         margin: 0.35rem 0 1.5rem 0;
         max-width: 430px;
     }
+    .insight-band {
+        border: 1px solid #d5e6ff;
+        border-radius: 8px;
+        padding: 1rem 1.05rem;
+        background: #eef6ff;
+        color: #174ea6;
+        font-weight: 650;
+        margin: 1rem 0 1.25rem 0;
+        line-height: 1.45;
+    }
     @media (max-width: 760px) {
         .kpi-value {
             font-size: 1.55rem;
@@ -118,6 +128,10 @@ def render_impact_card(value, helper):
         """,
         unsafe_allow_html=True,
     )
+
+
+def render_info_band(text):
+    st.markdown(f'<div class="insight-band">{text}</div>', unsafe_allow_html=True)
 
 
 def parse_jsonish(value):
@@ -283,17 +297,24 @@ def experimentation(filters):
     exp = overall_experiment_summary(filters)
 
     cols = st.columns(5)
-    cols[0].metric("Control conversion", f"{exp['control_rate']:.2%}")
-    cols[1].metric("Variant conversion", f"{exp['variant_rate']:.2%}")
-    cols[2].metric("Uplift", f"{exp['uplift_pct']:.2%}")
-    cols[3].metric("p-value", f"{exp['p_value']:.4f}")
-    cols[4].metric("Impact", fmt_currency(exp["commercial_impact_estimate"]))
+    with cols[0]:
+        kpi_card("Control Conversion", f"{exp['control_rate']:.2%}", "Baseline checkout rate")
+    with cols[1]:
+        kpi_card("Variant Conversion", f"{exp['variant_rate']:.2%}", "Reduced-friction checkout")
+    with cols[2]:
+        kpi_card("Relative Uplift", f"{exp['uplift_pct']:.2%}", "Variant vs control", accent=True)
+    with cols[3]:
+        kpi_card("p-value", f"{exp['p_value']:.4f}", "Statistical confidence")
+    with cols[4]:
+        kpi_card("Impact", fmt_currency(exp["commercial_impact_estimate"]), "Estimated revenue lift", accent=True)
 
     fig = px.bar(overall, x="variant", y="conversion_rate", color="variant", text_auto=".2%")
     fig.update_layout(showlegend=False, height=380)
+    fig.update_yaxes(tickformat=".1%", title="Conversion rate")
+    fig.update_xaxes(title="")
     st.plotly_chart(fig, use_container_width=True)
 
-    st.info(
+    render_info_band(
         f"The 95% confidence interval for absolute uplift is {exp['ci_low']:.2%} to {exp['ci_high']:.2%}. "
         f"The result is {'statistically significant' if exp['is_significant'] else 'not statistically significant'} at p < 0.05."
     )
